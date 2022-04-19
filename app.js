@@ -10,7 +10,11 @@ const btnAdd = document.querySelector('.btn-info');
 const btnRemove = document.querySelector('.btn-danger');
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchData()
+    fetchData();
+	if(localStorage.getItem('cart')){
+		cart = JSON.parse(localStorage.getItem('cart'));
+		printCart();
+	}
 })
 
 const fetchData = async () => {
@@ -20,17 +24,18 @@ const fetchData = async () => {
         const url = await fetch ("api.json");
         const data = await url.json();
         printCards(data)
-
     }
     catch(error){
-
         console.log(error)
-
     }
     finally{
         loading(false)
     }
 }
+
+items.addEventListener('click', (e) => {
+	btnAction(e)
+})
 
 const printCards = (data) => {
     
@@ -61,21 +66,23 @@ const loading = (state) => {
 
 document.addEventListener('click', (e)=> {
     e.stopPropagation()
-    if(e.target.matches('.btn')){
+    if(e.target.matches('.btn-dark')){
         
-        setCart(e.target.parentElement.parentElement)
+       setCart(e.target.parentElement)
+		
     }
 
 })
 
 const setCart = obj => {
+	
     const product = {
 		id: obj.querySelector('button').dataset.id,
-		title: obj.querySelector('h5').innerHTML ,
-		price: obj.querySelector('p').innerHTML,
-        
+		title: obj.querySelector('h5').innerHTML,
+		price: obj.querySelector('p').innerHTML,        
         stock: 1	
     }
+	
 
     if(cart.hasOwnProperty(product.id)){
         product.stock = cart[product.id].stock + 1
@@ -86,38 +93,98 @@ const setCart = obj => {
 }
 
 const printCart = () => {
+	items.innerHTML = "";              
     Object.values(cart).forEach(product => { 
-        items.innerHTML = "";              
-        templateCart.querySelector('th').innerHTML = product.title;
-        templateCart.querySelector('td').innerHTML = product.stock;
-        
+        templateCart.querySelector('th').textContent = product.title;
+        templateCart.querySelectorAll('td')[1].textContent = product.stock;  
+		templateCart.querySelector('.btn-info').dataset.id = product.id;      
         templateCart.querySelector('.btn-danger').dataset.id = product.id;
-        templateCart.querySelector('span').innerHTML = product.stock * product.price;
+        templateCart.querySelector('span').innerHTML = product.stock * product.price; 
 
-         const clone = templateCart.cloneNode(true)
-         fragment.appendChild(clone)         
+        const clone = templateCart.cloneNode(true)
+        fragment.appendChild(clone)         
         
     })
 
     items.appendChild(fragment);
-    console.log(items)
+    printFooter();
+
+	localStorage.setItem('cart', JSON.stringify(cart))
+
+};
+
+
+
+const printFooter = () => {
+    footer.innerHTML = ""
+    if(Object.keys(cart).length === 0){
+        footer.innerHTML = `
+		<th scope="row" colspan="5">Shoping Cart Empty - start buying!</th>` 
+		
+		return
+
+    }
+
+	const nCantidad = Object.values(cart).reduce((acc, {stock}) => acc + stock, 0);
+	const nPrecio = Object.values(cart).reduce((acc,{stock,price}) => acc + stock * price, 0)
+	
+	
+	templateFooter.querySelector('td').innerHTML = nCantidad;
+	templateFooter.querySelector('span').innerHTML = nPrecio;
+	const clone = templateFooter.cloneNode(true);
+	fragment.appendChild(clone);     
+	footer.appendChild(fragment);	 
+	
+}
+
+document.addEventListener('click', (e) => {
+	if(e.target.matches('#empty')){
+		emptyCart();
+	}
+})
+
+const emptyCart = () => {
+	cart = {};	
+	printCart();	
+	printFooter();
 
 }
 
+const btnAction = (e) => {
 
-btnAdd.addEventListener('click', (e)=>{
-    if(e.target.matches('.btn-info')){
-        product.stock = cart[product.id].stock + 1
+	
 
-    }
-})
+	if(e.target.matches('.btn-info')){
 
-btnRemove.addEventListener('click', (e)=>{
-    if(e.target.matches('.btn-danger')){
-        product.stock = cart[product.id].stock - 1
+		const product = cart[e.target.dataset.id];
+		product.stock++ ;
+		cart[e.target.dataset.id] = {...product}
+		printCart();
+	}
 
-    }
-})
+	if(e.target.matches('.btn-danger')){
+		const product = cart[e.target.dataset.id];
+		product.stock-- ;	
+
+		if(product.stock === 0){
+			delete cart[e.target.dataset.id]			
+		}
+
+		printCart();
+		
+	}
+}
+
+
+
+
+
+
+
+
+
+
+ 
 
 
 
