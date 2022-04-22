@@ -24,7 +24,7 @@ const fetchData = async () => {
         const url = await fetch ("api.json");
         const data = await url.json();
         printCards(data)
-    }
+    }  
     catch(error){
         console.log(error)
     }
